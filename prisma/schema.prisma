@@ -1,0 +1,82 @@
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Product {
+  id        String   @id @default(cuid())
+  shopifyId String   @unique
+  title     String
+  handle    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  shopifyId       String      @unique
+  orderNumber     String
+  customerId      String?
+  customerName    String?
+  customerEmail   String?
+  orderedAt       DateTime
+  financialStatus String?
+  fulfillmentStatus String?
+  currencyCode    String
+  subtotal        Decimal?    @db.Decimal(19, 4)
+  total           Decimal?    @db.Decimal(19, 4)
+  tax             Decimal?    @db.Decimal(19, 4)
+  shipping       Decimal?    @db.Decimal(19, 4)
+  cancelledAt     DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  lineItems OrderItem[]
+
+  @@index([orderedAt])
+  @@index([financialStatus])
+  @@index([fulfillmentStatus])
+  @@index([customerName])
+}
+
+model OrderItem {
+  id             String   @id @default(cuid())
+  shopifyId      String   @unique
+  orderId        String
+  shopifyProductId String?
+  shopifyVariantId String?
+  productTitle   String
+  variantTitle   String?
+  sku            String?
+  quantity       Int
+  unitPrice      Decimal? @db.Decimal(19, 4)
+  lineTotal      Decimal? @db.Decimal(19, 4)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([orderId])
+  @@index([shopifyProductId])
+  @@index([shopifyVariantId])
+}
+
+model WebhookEvent {
+  id         String    @id @default(cuid())
+  deliveryId String    @unique
+  eventId    String?
+  topic      String
+  shopDomain String?
+  status     String    @default("PROCESSING")
+  receivedAt DateTime  @default(now())
+  processedAt DateTime?
+  error      String?
+
+  @@index([eventId])
+  @@index([topic, receivedAt])
+}
